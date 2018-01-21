@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v2.45
+version=v3.5
 
 SYSTEMCTL_CMD=$(command -v systemctl)
 SERVICE_CMD=$(command -v service)
@@ -96,6 +96,7 @@ echo "V2Ray 安装 $version"
 /root/go.sh --version $version
 check_daemon
 echo "安装完成"
+ntpdate us.pool.ntp.org
 if [ -f "/etc/v2ray/config.back0" ]; then
 cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
   if [ -n "${SYSTEMCTL_CMD}" ]; then
@@ -119,6 +120,7 @@ function check_daemon(){
 hash start-stop-daemon 2>/dev/null || daemon_x=1
 echo $daemon_x
 if [ ! -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
+rm -f /root/keey.sh /etc/init.d/v2ray
 cat > "/etc/init.d/v2ray" <<-\VVRinit
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -162,6 +164,8 @@ do_start(){
         keep
         exit 0
     else
+        cd /usr/bin/v2ray/
+        ntpdate us.pool.ntp.org
         $DAEMON $DAEMON_OPTS &
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
@@ -206,6 +210,7 @@ do_restart(){
 }
 
 keep () {
+if [ ! -f "/root/keey.sh" ]; then
 cat > "/root/keey.sh" <<-\SSMK
 #!/bin/sh
 #/usr/bin/v2ray/v2ray
@@ -213,6 +218,7 @@ sleep 60
 service v2ray start
 SSMK
 chmod +x "/root/keey.sh"
+fi
 killall keey.sh
 /root/keey.sh &
 
@@ -654,6 +660,7 @@ cat << EOF > /root/config.json
 EOF
 
 
+ntpdate us.pool.ntp.org
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."

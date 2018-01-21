@@ -7,8 +7,11 @@ FWI="/tmp/firewall.v2ray.pdcn"
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 if [ "$v2ray_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+
+v2ray_follow=`nvram get v2ray_follow`
+v2ray_optput=`nvram get v2ray_optput`
 
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
@@ -169,17 +172,61 @@ eval $(ps -w | grep "_v2ray.sh keep" | grep -v grep | awk '{print "kill "$1";";}
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
+v2ray_wget_v2ctl () {
+
+v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
+if [ ! -s "$v2ctl_path" ] ; then
+	logger -t "【v2ray】" "找不到 $v2ctl_path 下载程序"
+	wgetcurl.sh $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
+	chmod 755 "$v2ctl_path"
+fi
+geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
+if [ ! -s "$geoip_path" ] ; then
+	logger -t "【v2ray】" "找不到 $geoip_path 下载程序"
+	wgetcurl.sh $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
+	chmod 755 "$geoip_path"
+fi
+geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
+if [ ! -s "$geosite_path" ] ; then
+	logger -t "【v2ray】" "找不到 $geosite_path 下载程序"
+	wgetcurl.sh $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+	chmod 755 "$geosite_path"
+fi
+}
+
 v2ray_start () {
 initconfig
 SVC_PATH="$v2ray_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/v2ray"
+	v2ray_path="$SVC_PATH"
 fi
 chmod 777 "$SVC_PATH"
 [[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/v2ray
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【v2ray】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
+fi
+optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+if [ ! -z "$optPath" ] ; then
+	logger -t "【v2ray】" " /opt/ 在内存储存"
+	A_restart=`nvram get app_19`
+	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh)" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
+		rm -f /opt/bin/v2ray
+		rm -f /opt/bin/v2ray_config.pb
+		v2ray_wget_v2ctl
+		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置"
+		cd "$(dirname "$SVC_PATH")"
+		v2ctl config < /etc/storage/v2ray_config_script.sh > /opt/bin/v2ray_config.pb
+		[ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
+		rm -f /opt/bin/v2ctl
+		rm -f /opt/bin/geoip.dat
+		rm -f /opt/bin/geosite.dat
+	fi
+else
+	v2ray_wget_v2ctl
+	rm -f /opt/bin/v2ray_config.pb
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【v2ray】" "找不到 $SVC_PATH 下载程序"
@@ -196,10 +243,11 @@ if [ -s "$SVC_PATH" ] ; then
 	nvram set v2ray_path="$SVC_PATH"
 fi
 v2ray_path="$SVC_PATH"
-
 logger -t "【v2ray】" "运行 v2ray_script"
 /etc/storage/v2ray_script.sh
-$v2ray_path  -config /etc/storage/v2ray_config_script.sh &
+cd "$(dirname "$v2ray_path")"
+[ ! -f /opt/bin/v2ray_config.pb ] && $v2ray_path -config /etc/storage/v2ray_config_script.sh -format json &
+[ -f /opt/bin/v2ray_config.pb ] && $v2ray_path -config /opt/bin/v2ray_config.pb -format pb &
 restart_dhcpd
 v2ray_v=`v2ray -version | grep V2Ray`
 nvram set v2ray_v="$v2ray_v"
@@ -273,6 +321,7 @@ iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
 hash su 2>/dev/null && su_x="1"
 hash su 2>/dev/null || su_x="0"
+[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令, 停止路由自身流量走透明代理"
 if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
 
 logger -t "【v2ray】" "支持游戏模式（UDP转发）"
@@ -371,6 +420,7 @@ cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 188.188.188.188
 110.110.110.110
 104.160.185.171
+213.183.53.47
 $lan_ipaddr
 $server_addresses
 EOF
@@ -477,7 +527,7 @@ keep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && rm -rf $v2ray_path
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path ; rm -f /opt/bin/v2ctl ; rm -f /opt/bin/geoip.dat ; rm -f /opt/bin/geosite.dat ; }
 	;;
 *)
 	v2ray_check

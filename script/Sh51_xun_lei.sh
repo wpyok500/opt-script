@@ -4,7 +4,10 @@ source /etc/storage/script/init.sh
 xunleis=`nvram get xunleis`
 [ -z $xunleis ] && xunleis=0 && nvram set xunleis=0
 if [ "$xunleis" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep xunlei | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep xunlei | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+xunleis_dir=`nvram get xunleis_dir`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep xun_lei)" ]  && [ ! -s /tmp/script/_xun_lei ]; then
@@ -143,10 +146,22 @@ SVC_PATH="$xunleis_dir/xunlei/portal"
 if [ ! -s "$SVC_PATH" ] ; then
 	ss_opt_x=`nvram get ss_opt_x`
 	upanPath=""
-	[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+	[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	if [ "$ss_opt_x" = "5" ] ; then
+		# 指定目录
+		opt_cifs_dir=`nvram get opt_cifs_dir`
+		if [ -d $opt_cifs_dir ] ; then
+			upanPath="$opt_cifs_dir"
+		else
+			logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+			upanPath=""
+			[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+			[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		fi
+	fi
 	echo "$upanPath"
 	if [ -z "$upanPath" ] ; then 
 		logger -t "【迅雷下载】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
@@ -176,7 +191,7 @@ chmod 777 "$xunleis_dir/xunlei" -R
 logger -t "【迅雷下载】" "启动程序"
 cd "$xunleis_dir/xunlei"
 export LD_LIBRARY_PATH="$xunleis_dir/xunlei/lib:/lib:/opt/lib"
-"$xunleis_dir/xunlei/portal" >/dev/null 2>&1 &
+"$xunleis_dir/xunlei/portal" &
 sleep 2
 export LD_LIBRARY_PATH="/lib:/opt/lib"
 sleep 5

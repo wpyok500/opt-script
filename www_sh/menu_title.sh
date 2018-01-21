@@ -7,7 +7,7 @@ menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端 
 menu_title2="SS配置       SS节点   Kcptun  SS_Server SSR_Server COW       MEOW SoftEtherVPN"
 menu_title3="花生壳内网版 Ngrok    frp     DNSPod    CloudXNS   Aliddns"
 menu_title4="Adbyby       ADM      koolproxy"
-menu_title5="搭建Web环境  v2ray  chinadns 假装在中国 upd2pro 家庭云提速 filemanager"
+menu_title5="搭建Web环境  v2ray  chinadns 假装在中国 upd2pro 家庭云提速 filemanager verysync"
 ################################
 menu_title_all="$menu_title1 $menu_title2 $menu_title3 $menu_title4 $menu_title5"
 source /etc/storage/script/init.sh
@@ -25,7 +25,52 @@ title_init()
 {
 
 # 清空数据
-nvramshow=`nvram showall | grep '=' | grep menu | grep title | awk '{print "nvram set "$1";";}' | awk '{print gensub(/=.*/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep menu | grep title | awk '{print "nvram set "$1";";}' | awk '{print gensub(/=.*/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvram set menu0_title1=""
+nvram set menu0_title2=""
+nvram set menu0_title3=""
+nvram set menu0_title4=""
+nvram set menu0_title5=""
+nvram set menu1_title1=""
+nvram set menu2_title1=""
+nvram set menu3_title1=""
+nvram set menu4_title1=""
+nvram set menu5_title1=""
+nvram set menu6_title1=""
+nvram set menu7_title1=""
+nvram set menu8_title1=""
+nvram set menu1_title2=""
+nvram set menu2_title2=""
+nvram set menu3_title2=""
+nvram set menu4_title2=""
+nvram set menu5_title2=""
+nvram set menu6_title2=""
+nvram set menu7_title2=""
+nvram set menu8_title2=""
+nvram set menu1_title3=""
+nvram set menu2_title3=""
+nvram set menu3_title3=""
+nvram set menu4_title3=""
+nvram set menu5_title3=""
+nvram set menu6_title3=""
+nvram set menu7_title3=""
+nvram set menu8_title3=""
+nvram set menu1_title4=""
+nvram set menu2_title4=""
+nvram set menu3_title4=""
+nvram set menu4_title4=""
+nvram set menu5_title4=""
+nvram set menu6_title4=""
+nvram set menu7_title4=""
+nvram set menu8_title4=""
+nvram set menu1_title5=""
+nvram set menu2_title5=""
+nvram set menu3_title5=""
+nvram set menu4_title5=""
+nvram set menu5_title5=""
+nvram set menu6_title5=""
+nvram set menu7_title5=""
+nvram set menu8_title5=""
 
 # 写入数据
 i=1

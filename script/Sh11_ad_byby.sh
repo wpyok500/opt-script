@@ -5,13 +5,27 @@ TAG="AD_BYBY"		  # iptables tag
 adbyby_enable=`nvram get adbyby_enable`
 [ -z $adbyby_enable ] && adbyby_enable=0 && nvram set adbyby_enable=0
 if [ "$adbyby_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep '=' | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep '=' | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep '=' | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+#nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+adbyby_mode_x=`nvram get adbyby_mode_x`
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
-
+ss_link_1=`nvram get ss_link_1`
+adbyby_update=`nvram get adbyby_update`
+adbyby_update_hour=`nvram get adbyby_update_hour`
+adbyby_update_min=`nvram get adbyby_update_min`
+adbyby_mode_x=`nvram get adbyby_mode_x`
+adbyby_adblocks=`nvram get adbyby_adblocks`
+adbyby_CPUAverages=`nvram get adbyby_CPUAverages`
+adbyby_whitehost_x=`nvram get adbyby_whitehost_x`
+adbyby_whitehost=`nvram get adbyby_whitehost`
+ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
+ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
+koolproxy_enable=`nvram get koolproxy_enable`
+adm_enable=`nvram get adm_enable`
+ss_enable=`nvram get ss_enable`
+ss_mode_x=`nvram get ss_mode_x`
 
 adbybyfile="$hiboyfile/7620i.tar.gz"
 adbybyfile2="$hiboyfile2/7620i.tar.gz"
@@ -45,10 +59,22 @@ adbyby_mount () {
 
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "5" ] ; then
+	# 指定目录
+	opt_cifs_dir=`nvram get opt_cifs_dir`
+	if [ -d $opt_cifs_dir ] ; then
+		upanPath="$opt_cifs_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+		upanPath=""
+		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
 	logger -t "【Adbyby】" "已挂载储存设备, 主程序放外置设备存储"
@@ -136,7 +162,7 @@ exit 0
 adbyby_get_status () {
 
 A_restart=`nvram get adbyby_status`
-B_restart="$adbyby_enable$ss_link_1$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$ss_sub4$adbyby_whitehost_x$whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adbyby_enable$ss_link_1$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$adbyby_whitehost_x$adbyby_whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adbyby_status=$B_restart
@@ -199,9 +225,9 @@ killall -9 sh_ad_byby_keey_k.sh
 
 rm -f /tmp/cron_adb.lock
 reb="1"
-[ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
+[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
-[ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
+[ $ss_link_1 == "email.163.com" ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
 while true; do
 adbyby_enable=`nvram get adbyby_enable`
 [ "$adbyby_enable" != "1" ] && exit
@@ -213,30 +239,32 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
-	hash check_network 2>/dev/null && {
-	check_network 3
-	[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
+	check=0
+	hash check_network 2>/dev/null && check=1
+	if [ "$check" == "1" ] ; then
+		check_network 3
+		[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
 		if [ "$check" == "404" ] ; then
 			check_network 3
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
-	}
-	hash check_network 2>/dev/null || check=404
-	[ "$check" == "404" ] && {
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
-		if [ "$check" == "404" ] ; then
-			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check" != "200" ] &&  sleep 3
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
-	}
+	hash check_network 2>/dev/null || check=404
+	if [ "$check" == "404" ] ; then
+		curltest=`which curl`
+		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
+			if [ "$check" == "404" ] ; then
+				wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+				[ "$?" == "0" ] && check=200 || check=404
+			fi
+		else
+			check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] &&  sleep 1
+			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		fi
+	fi
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
@@ -247,7 +275,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 adbyby
 			killall -9 adbyby
 			sleep 3
-			/tmp/bin/adbyby >/dev/null 2>&1 &
+			/tmp/bin/adbyby &
 			sleep 20
 			reb=`expr $reb + 1`
 		fi
@@ -257,7 +285,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 adbyby
 			killall -9 adbyby
 			sleep 3
-			/tmp/bin/adbyby >/dev/null 2>&1 &
+			/tmp/bin/adbyby &
 			sleep 20
 		fi
 		port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
@@ -303,7 +331,7 @@ done
 adbyby_keepcpu () {
 if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	processor=`cat /proc/cpuinfo| grep "processor"| wc -l`
-	processor=`expr $processor \* 2`
+	[ "$processor" = "1" ] && processor=`expr $processor \* 2`
 	CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' | awk -F ',' '{print $2;}' | sed -e 's/\..*//g'`
 	if [ $((CPULoad)) -ge "$processor" ] ; then
 		logger -t "【Adbyby】" "CPU 负载拥堵, 关闭 adbyby"
@@ -353,16 +381,20 @@ xwhyc_rules="$hiboyfile/video.txt"
 xwhyc_rules3="$hiboyfile2/video.txt"
 xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules1 $xwhyc_rules  N 5
-[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules2 N $xwhyc_rules3 5
+wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules0 $xwhyc_rules1 N 5
+[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules2 $xwhyc_rules2 N 5
+[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules3 N 5
 xwhyc_rules="$hiboyfile/lazy.txt"
 xwhyc_rules3="$hiboyfile2/lazy.txt"
 xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules1 $xwhyc_rules  N 100
-[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules2 $xwhyc_rules3 N 100
+wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules0 $xwhyc_rules1 N 100
+[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules2 $xwhyc_rules2 N 100
+[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules3 N 100
 
 }
 
@@ -396,10 +428,10 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		[ "$?" == "0" ] && check=200 || check=404
 	else
 		check=`curl --connect-timeout 10 -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
-		[ "$check" != "200" ] && {
-		wget --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
-		[ "$?" == "0" ] && check=200 || check=404
-		}
+		if [ "$check" != "200" ] ; then
+			wget --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
 	fi
 	if [ "$check" == "200" ] ; then
 		logger -t "【Adbyby】" "测试下载规则成功"
@@ -469,7 +501,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		[ -s /tmp/bin/data/video_B.txt ] && mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
 	fi
 	logger -t "【Adbyby】" "启动 adbyby 程序"
-	/tmp/bin/adbyby >/dev/null 2>&1 &
+	/tmp/bin/adbyby &
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【Adbyby】" "加载 第三方自定义 规则, 等候10秒"
 		sleep 10
@@ -483,7 +515,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		update_ad_rules
 		killall adbyby
 		killall -9 adbyby
-		/tmp/bin/adbyby >/dev/null 2>&1 &
+		/tmp/bin/adbyby &
 		sleep 10
 	fi
 fi
@@ -926,9 +958,11 @@ update)
 	checka="/tmp/var/lazy.txt"
 	rm -f /tmp/var/lazy.txt
 	urla="http://update.adbyby.com/rule3/lazy.jpg"
+	urla1="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 	urla2="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
 	checkb="/tmp/bin/data/lazy.txt"
-	wgetcurl.sh $checka $urla $urla2 N 100
+	wgetcurl.sh $checka $urla $urla1 N 100
+	[ ! -s $checka ] && wgetcurl.sh $checka $urla $urla2 N 100
 	if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 		logger -t "【Adbyby】" "更新检查:lazy 有更新 $urla , 重启进程"
 		adbyby_restart
@@ -937,9 +971,11 @@ update)
 		checka="/tmp/var/video.txt"
 		rm -f /tmp/var/video.txt
 		urla="http://update.adbyby.com/rule3/video.jpg"
+		urla1="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 		urla2="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
 		checkb="/tmp/bin/data/video.txt"
-		wgetcurl.sh $checka $urla $urla2 N 5
+		wgetcurl.sh $checka $urla $urla1 N 5
+		[ ! -s $checka ] && wgetcurl.sh $checka $urla $urla2 N 5
 		if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 			logger -t "【Adbyby】" "更新检查:video 有更新 $urla , 重启进程"
 			adbyby_restart
